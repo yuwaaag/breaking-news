@@ -5,7 +5,6 @@
     <style>
         body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: transparent; font-family: 'Arial Black', sans-serif; }
 
-        /* मुख्य बैकग्राउंड एनीमेशन */
         .breaking-container {
             width: 100%; height: 100%;
             background: radial-gradient(circle, #ff0000 0%, #660000 100%);
@@ -20,36 +19,32 @@
         }
 
         .header {
-            font-size: 120px; color: #fff; text-shadow: 5px 5px 20px #000;
+            font-size: 130px; color: #fff; text-shadow: 5px 5px 20px #000;
             letter-spacing: 10px; margin-bottom: 50px;
-            animation: zoom-in 1s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            animation: bounceIn 1s infinite alternate;
         }
 
-        @keyframes zoom-in {
-            0% { transform: scale(0); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes bounceIn {
+            from { transform: scale(0.95); }
+            to { transform: scale(1.05); }
         }
 
         .news-box {
-            width: 80%; background: white; padding: 40px;
+            width: 85%; background: white; padding: 50px;
             border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            transform: skewX(-5deg); border-left: 20px solid #ffcc00;
+            transform: skewX(-3deg); border-left: 25px solid #ffcc00;
+            min-height: 200px; display: flex; align-items: center; justify-content: center;
         }
 
         .news-text {
-            font-size: 60px; color: #cc0000; text-align: center;
-            margin: 0; line-height: 1.4;
+            font-size: 65px; color: #cc0000; text-align: center;
+            margin: 0; line-height: 1.3; font-weight: bold;
         }
 
         .flash-tag {
-            background: #ffcc00; color: black; padding: 10px 40px;
-            font-size: 30px; position: absolute; top: 50px; left: 0;
-            animation: slide-in 0.5s forwards;
-        }
-
-        @keyframes slide-in {
-            from { left: -500px; }
-            to { left: 0; }
+            background: #ffcc00; color: black; padding: 15px 50px;
+            font-size: 40px; position: absolute; top: 60px; left: 0;
+            font-weight: bold; box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
         }
     </style>
 </head>
@@ -63,10 +58,16 @@
     </div>
 </div>
 
-<script>
-    let lastNews = "";
+<audio id="bgMusic" loop>
+    <source src="https://www.soundjay.com/free-music/sounds/action-movie-trailer-01.mp3" type="audio/mpeg">
+</audio>
 
-    async function fetchBreaking() {
+<script>
+    let newsList = [];
+    let currentIndex = 0;
+    const bgMusic = document.getElementById('bgMusic');
+
+    async function fetchNews() {
         const rssUrl = "https://www.bhaskar.com/rss-v1--category-1061.xml"; 
         const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
 
@@ -74,33 +75,50 @@
             const response = await fetch(apiUrl);
             const data = await response.json();
             if (data.status === 'ok') {
-                const currentNews = data.items[0].title; // सबसे ताज़ा खबर
-
-                // अगर खबर नई है तभी बोलें और दिखाएं
-                if (currentNews !== lastNews) {
-                    lastNews = currentNews;
-                    document.getElementById('headline').innerText = currentNews;
-                    speakNews(currentNews);
-                }
+                newsList = data.items;
+                showNextNews();
             }
-        } catch (e) { console.log("Error"); }
+        } catch (e) { console.log("RSS Error"); }
+    }
+
+    function showNextNews() {
+        if (newsList.length === 0) return;
+
+        const headlineElement = document.getElementById('headline');
+        const currentTitle = newsList[currentIndex].title;
+
+        // Display news
+        headlineElement.innerText = currentTitle;
+        
+        // AI Voice
+        speakNews(currentTitle);
+
+        // Move to next news or reset
+        currentIndex = (currentIndex + 1) % newsList.length;
+
+        // Wait for 15 seconds before next news
+        setTimeout(showNextNews, 15000);
     }
 
     function speakNews(text) {
-        // AI Voice (Speech Synthesis)
+        window.speechSynthesis.cancel(); // Stop current speech
         const msg = new SpeechSynthesisUtterance();
-        msg.text = "ब्रेकिंग न्यूज़. " + text;
-        msg.lang = 'hi-IN'; // हिंदी आवाज
-        msg.rate = 0.9;     // बोलने की गति
-        msg.pitch = 1.1;    // आवाज की टोन
+        msg.text = "ब्रेकिंग न्यूज़... " + text;
+        msg.lang = 'hi-IN';
+        msg.rate = 0.8;
         window.speechSynthesis.speak(msg);
     }
 
-    // हर 1 मिनट में चेक करेगा कि कोई नई खबर तो नहीं आई
-    setInterval(fetchBreaking, 15000);
-    
-    // पहली बार चलाने के लिए छोटा सा क्लिक ज़रूरी होता है ब्राउज़र में
-    window.onclick = () => { fetchBreaking(); };
+    // Start Everything on Click (Required by Browsers)
+    window.onclick = () => {
+        bgMusic.play();
+        fetchNews();
+        // Hide message
+        console.log("Started");
+    };
+
+    // Auto Refresh list every 10 minutes
+    setInterval(fetchNews, 600000);
 </script>
 
 </body>
