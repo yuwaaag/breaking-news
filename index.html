@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body, html { margin: 0; padding: 0; width: 1920px; height: 1080px; overflow: hidden; background: transparent; font-family: 'Arial Black', sans-serif; }
+
+        /* मुख्य बैकग्राउंड एनीमेशन */
+        .breaking-container {
+            width: 100%; height: 100%;
+            background: radial-gradient(circle, #ff0000 0%, #660000 100%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border: 15px solid #ffcc00; box-sizing: border-box;
+            animation: pulse-bg 2s infinite alternate;
+        }
+
+        @keyframes pulse-bg {
+            0% { box-shadow: inset 0 0 50px #000; }
+            100% { box-shadow: inset 0 0 150px #000; }
+        }
+
+        .header {
+            font-size: 120px; color: #fff; text-shadow: 5px 5px 20px #000;
+            letter-spacing: 10px; margin-bottom: 50px;
+            animation: zoom-in 1s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+
+        @keyframes zoom-in {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .news-box {
+            width: 80%; background: white; padding: 40px;
+            border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            transform: skewX(-5deg); border-left: 20px solid #ffcc00;
+        }
+
+        .news-text {
+            font-size: 60px; color: #cc0000; text-align: center;
+            margin: 0; line-height: 1.4;
+        }
+
+        .flash-tag {
+            background: #ffcc00; color: black; padding: 10px 40px;
+            font-size: 30px; position: absolute; top: 50px; left: 0;
+            animation: slide-in 0.5s forwards;
+        }
+
+        @keyframes slide-in {
+            from { left: -500px; }
+            to { left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="breaking-container">
+    <div class="flash-tag">बड़ी खबर</div>
+    <div class="header">BREAKING NEWS</div>
+    <div class="news-box">
+        <p class="news-text" id="headline">खबरें लोड हो रही हैं...</p>
+    </div>
+</div>
+
+<script>
+    let lastNews = "";
+
+    async function fetchBreaking() {
+        const rssUrl = "https://www.bhaskar.com/rss-v1--category-1061.xml"; 
+        const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+
+        try {
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+            if (data.status === 'ok') {
+                const currentNews = data.items[0].title; // सबसे ताज़ा खबर
+
+                // अगर खबर नई है तभी बोलें और दिखाएं
+                if (currentNews !== lastNews) {
+                    lastNews = currentNews;
+                    document.getElementById('headline').innerText = currentNews;
+                    speakNews(currentNews);
+                }
+            }
+        } catch (e) { console.log("Error"); }
+    }
+
+    function speakNews(text) {
+        // AI Voice (Speech Synthesis)
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = "ब्रेकिंग न्यूज़. " + text;
+        msg.lang = 'hi-IN'; // हिंदी आवाज
+        msg.rate = 0.9;     // बोलने की गति
+        msg.pitch = 1.1;    // आवाज की टोन
+        window.speechSynthesis.speak(msg);
+    }
+
+    // हर 1 मिनट में चेक करेगा कि कोई नई खबर तो नहीं आई
+    setInterval(fetchBreaking, 60000);
+    
+    // पहली बार चलाने के लिए छोटा सा क्लिक ज़रूरी होता है ब्राउज़र में
+    window.onclick = () => { fetchBreaking(); };
+</script>
+
+</body>
+</html>
